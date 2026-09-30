@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import traceback
+
 # Source: https://www.kaggle.com/code/kiyotah/a-sample-rule-based-agent-mega-abomasnow-ex-deck
 # Local changes: notebook extraction, module-relative deck loading, formatting, and typing.
 from collections import defaultdict
@@ -83,7 +85,7 @@ def get_card(
             return None
 
 
-def agent(obs_dict: dict[str, Any]) -> list[int]:
+def _agent_impl(obs_dict: dict[str, Any]) -> list[int]:
     """Main Agent Function.
 
     Each element in the returned list must be >= 0 and < len(obs.select.option).
@@ -309,3 +311,23 @@ def agent(obs_dict: dict[str, Any]) -> list[int]:
     # Select in descending order of score
     desc_indices = [i for i, _ in sorted(enumerate(scores), key=lambda x: x[1], reverse=True)]
     return desc_indices[: select.maxCount]
+
+
+def agent(obs_dict: dict[str, Any]) -> list[int]:
+    try:
+        return _agent_impl(obs_dict)
+    except Exception:
+        traceback.print_exc()
+        if isinstance(obs_dict, dict) and obs_dict.get("select") is None:
+            return list(my_deck)
+        select = obs_dict.get("select") if isinstance(obs_dict, dict) else None
+        if not isinstance(select, dict):
+            return []
+        options = select.get("option") or []
+        minimum = select.get("minCount", 0)
+        maximum = select.get("maxCount", 0)
+        if not isinstance(minimum, int) or not isinstance(maximum, int):
+            return []
+        if minimum < 0 or maximum < minimum or maximum > len(options):
+            return []
+        return list(range(maximum))

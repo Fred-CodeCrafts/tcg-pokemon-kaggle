@@ -16,6 +16,7 @@ real results/
 *.pkl
 *.npz
 *.zip
+agents/*/cg/
 __pycache__/
 *.py[cod]
 .kaggle/

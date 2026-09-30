@@ -18,6 +18,7 @@ def build_submission(agent_dir, output, max_size_mib=197.7):
     agent_dir = Path(agent_dir).resolve()
     main_path = agent_dir / "main.py"
     deck_path = agent_dir / "deck.csv"
+    cg_path = agent_dir / "cg"
     if not main_path.is_file() or not deck_path.is_file():
         raise FileNotFoundError("agent directory must contain main.py and deck.csv")
 
@@ -34,12 +35,19 @@ def build_submission(agent_dir, output, max_size_mib=197.7):
         with tarfile.open(archive_path, "w:gz") as archive:
             archive.add(main_path, arcname="main.py")
             archive.add(deck_path, arcname="deck.csv")
+            if cg_path.is_dir():
+                archive.add(cg_path, arcname="cg")
 
         if archive_path.stat().st_size > max_size_mib * 1024 * 1024:
             raise ValueError(f"archive exceeds the {max_size_mib:g} MiB size limit")
         with tarfile.open(archive_path, "r:gz") as archive:
-            names = sorted(member.name for member in archive.getmembers())
-            if names != ["deck.csv", "main.py"]:
+            members = archive.getmembers()
+            roots = {member.name.split("/", 1)[0] for member in members}
+            expected_roots = {"deck.csv", "main.py"}
+            if cg_path.is_dir():
+                expected_roots.add("cg")
+            if roots != expected_roots:
+                names = sorted(member.name for member in members)
                 raise ValueError(f"unexpected archive layout: {names}")
             extracted = temporary / "agent"
             archive.extractall(extracted, filter="data")
