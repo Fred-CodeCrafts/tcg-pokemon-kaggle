@@ -1,0 +1,22 @@
+the-pokemon-company-ptcg-ai-battle-challenge-playground.zip
+the-pokemon-company-ptcg-ai-battle-challenge-playground/
+runs/
+checkpoints/
+submission.tar.gz
+submission_*.tar.gz
+real results/
+*.dll
+*.so
+*.exe
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.pkl
+*.npz
+*.zip
+__pycache__/
+*.py[cod]
+.kaggle/
+access_token
