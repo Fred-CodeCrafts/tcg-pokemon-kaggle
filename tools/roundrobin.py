@@ -20,7 +20,7 @@ def _prepare_agent(folder, name, deck_path, baseline_main):
     return agent_dir
 
 
-def run_roundrobin(deck_dir, matches_per_pair, workers, timeout, seed, output_dir):
+def run_roundrobin(deck_dir, matches_per_pair, workers, timeout, seed, output_dir, baseline_main=None):
     deck_dir = Path(deck_dir).resolve()
     deck_paths = sorted(deck_dir.glob("*.csv"))
     if not deck_paths:
@@ -41,7 +41,9 @@ def run_roundrobin(deck_dir, matches_per_pair, workers, timeout, seed, output_di
 
     output_dir = Path(output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
-    baseline_main = ROOT / "agents" / "baseline" / "main.py"
+    baseline_main = Path(baseline_main or ROOT / "agents" / "baseline" / "main.py").resolve()
+    if not baseline_main.is_file():
+        raise FileNotFoundError(f"agent main file not found: {baseline_main}")
     pair_matches = matches_per_pair // 2
 
     with tempfile.TemporaryDirectory(prefix="ptcg_roundrobin_") as temporary:
@@ -120,11 +122,20 @@ def main():
     parser.add_argument("--timeout", type=float, default=120.0)
     parser.add_argument("--seed", type=int, default=20260930)
     parser.add_argument("--output-dir", default=None)
+    parser.add_argument("--agent-main", default=None, help="main.py used to pilot every deck")
     args = parser.parse_args()
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     output_dir = args.output_dir or str(ROOT / "runs" / f"roundrobin_{timestamp}")
     try:
-        run_roundrobin(args.deck_dir, args.matches_per_pair, args.workers, args.timeout, args.seed, output_dir)
+        run_roundrobin(
+            args.deck_dir,
+            args.matches_per_pair,
+            args.workers,
+            args.timeout,
+            args.seed,
+            output_dir,
+            args.agent_main,
+        )
     except (OSError, ValueError) as exc:
         parser.exit(1, f"round robin failed: {exc}\n")
 

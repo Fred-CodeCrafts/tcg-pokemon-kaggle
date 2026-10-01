@@ -6,6 +6,14 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+SAMPLE_CG = (
+    ROOT
+    / "the-pokemon-company-ptcg-ai-battle-challenge-playground"
+    / "sample_submission"
+    / "sample_submission"
+    / "sample_submission"
+    / "cg"
+)
 if __package__:
     from .arena import run_arena
     from .deck_check import DEFAULT_CARD_DATA, load_card_data, read_deck, validate_deck
@@ -19,8 +27,12 @@ def build_submission(agent_dir, output, max_size_mib=197.7):
     main_path = agent_dir / "main.py"
     deck_path = agent_dir / "deck.csv"
     cg_path = agent_dir / "cg"
+    if not cg_path.is_dir():
+        cg_path = SAMPLE_CG
     if not main_path.is_file() or not deck_path.is_file():
         raise FileNotFoundError("agent directory must contain main.py and deck.csv")
+    if not cg_path.is_dir():
+        raise FileNotFoundError(f"cabt runtime package not found: {cg_path}")
 
     deck_errors = validate_deck(read_deck(deck_path), load_card_data(DEFAULT_CARD_DATA))
     if deck_errors:
@@ -35,17 +47,14 @@ def build_submission(agent_dir, output, max_size_mib=197.7):
         with tarfile.open(archive_path, "w:gz") as archive:
             archive.add(main_path, arcname="main.py")
             archive.add(deck_path, arcname="deck.csv")
-            if cg_path.is_dir():
-                archive.add(cg_path, arcname="cg")
+            archive.add(cg_path, arcname="cg")
 
         if archive_path.stat().st_size > max_size_mib * 1024 * 1024:
             raise ValueError(f"archive exceeds the {max_size_mib:g} MiB size limit")
         with tarfile.open(archive_path, "r:gz") as archive:
             members = archive.getmembers()
             roots = {member.name.split("/", 1)[0] for member in members}
-            expected_roots = {"deck.csv", "main.py"}
-            if cg_path.is_dir():
-                expected_roots.add("cg")
+            expected_roots = {"deck.csv", "main.py", "cg"}
             if roots != expected_roots:
                 names = sorted(member.name for member in members)
                 raise ValueError(f"unexpected archive layout: {names}")
